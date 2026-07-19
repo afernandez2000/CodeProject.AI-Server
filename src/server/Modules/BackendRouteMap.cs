@@ -379,10 +379,23 @@ namespace CodeProject.AI.Server.Modules
         public string QueueName { get; private set; }
 
         /// <summary>
-        /// Gets the command identifier which distinguishes the backend operations to perform based 
+        /// Gets the command identifier which distinguishes the backend operations to perform based
         /// on the server's API endpoint.
         /// </summary>
         public string Command { get; private set; }
+
+        /// <summary>
+        /// Gets the id of the module that currently owns (serves) this route. May be null for
+        /// legacy registrations that did not supply a module id.
+        /// </summary>
+        public string? ModuleId { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether the module that owns this route is enabled (AutoStart).
+        /// Used to resolve collisions when two modules declare the same route: an enabled owner is
+        /// never displaced by a disabled one, but an enabled owner may displace a disabled one.
+        /// </summary>
+        public bool OwnerEnabled { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the RouteQueueInfo class.
@@ -392,12 +405,17 @@ namespace CodeProject.AI.Server.Modules
         /// <param name="method">The HTTP Method for the route.</param>
         /// <param name="queueName">The name of the Queue.</param>
         /// <param name="command">The backend operation identifier.</param>
-        public RouteQueueInfo(string route, string method, string queueName, string command)
+        /// <param name="moduleId">The id of the module owning this route.</param>
+        /// <param name="ownerEnabled">Whether the owning module is enabled (AutoStart).</param>
+        public RouteQueueInfo(string route, string method, string queueName, string command,
+                              string? moduleId = null, bool ownerEnabled = true)
         {
-            Route     = route.ToLower();
-            Method    = method.ToUpper();
-            QueueName = queueName.ToLower();
-            Command   = command;
+            Route        = route.ToLower();
+            Method       = method.ToUpper();
+            QueueName    = queueName.ToLower();
+            Command      = command;
+            ModuleId     = moduleId;
+            OwnerEnabled = ownerEnabled;
         }
     }
 
@@ -461,21 +479,46 @@ namespace CodeProject.AI.Server.Modules
         /// <param name="method">The HTTP Method used to call the path/command</param>
         /// <param name="queueName">The name of the queue that the request will be associated with.</param>
         /// <param name="command">The command that will be passed with the payload.</param>
-        /// <param name="moduleId">The id of the module owning this route. Optional. If supplied, 
+        /// <param name="moduleId">The id of the module owning this route. Optional. If supplied,
         /// lowercase moduleId will replace all instances of %MODULE_ID% in route, method, queue
-        /// name and command</param> 
+        /// name and command</param>
+        /// <param name="ownerEnabled">Whether the module registering this route is enabled
+        /// (AutoStart=true). Used for deterministic collision resolution when two modules declare
+        /// the same route.</param>
         public void Register(string route, string method, string queueName, string command,
-                             string? moduleId = null)
+                             string? moduleId = null, bool ownerEnabled = true)
         {
             string marker = "%MODULE_ID%";
 
             string key    = MakeKey(route.Replace(marker, moduleId), method.Replace(marker, moduleId));
-            
+
             var routeInfo = new RouteQueueInfo(route.Replace(marker,     moduleId),
                                                method.Replace(marker,    moduleId),
                                                queueName.Replace(marker, moduleId),
-                                               command.Replace(marker,   moduleId));
-            _routeQueueMap[key] = routeInfo;
+                                               command.Replace(marker,   moduleId),
+                                               moduleId, ownerEnabled);
+
+            // Deterministic ownership for shared routes: two modules may declare the same route
+            // (e.g. a successor module replacing a legacy one). The winner must NOT depend on
+            // registration order. Rule:
+            //   - If the route is unowned, take it.
+            //   - If we (the new owner) are enabled and the current owner is disabled, displace it.
+            //   - If we are re-registering the route for the same module, refresh it.
+            //   - Otherwise (an enabled owner already holds it, or we're disabled and someone else
+            //     owns it), leave the existing owner in place.
+            _routeQueueMap.AddOrUpdate(key, routeInfo, (_, existing) =>
+            {
+                bool sameOwner = existing.ModuleId is not null && moduleId is not null &&
+                                 existing.ModuleId.EqualsIgnoreCase(moduleId);
+
+                if (sameOwner)
+                    return routeInfo;                         // refresh our own registration
+
+                if (routeInfo.OwnerEnabled && !existing.OwnerEnabled)
+                    return routeInfo;                         // enabled displaces disabled
+
+                return existing;                              // keep the current (enabled/prior) owner
+            });
         }
 
         /// <summary>
@@ -485,12 +528,15 @@ namespace CodeProject.AI.Server.Modules
         /// register.</param>
         /// <param name="queueName">The name of the queue that the request will be associated with.
         /// </param>
-        /// <param name="moduleId">The id of the module owning this route. Optional. If supplied, 
+        /// <param name="moduleId">The id of the module owning this route. Optional. If supplied,
         /// lowercase moduleId will replace all instances of %MODULE_ID% in route, method, queue
-        /// name and command</param> 
-        public void Register(ModuleRouteInfo info, string queueName, string? moduleId = null)
+        /// name and command</param>
+        /// <param name="ownerEnabled">Whether the module registering this route is enabled
+        /// (AutoStart=true). Used for deterministic collision resolution.</param>
+        public void Register(ModuleRouteInfo info, string queueName, string? moduleId = null,
+                             bool ownerEnabled = true)
         {
-            Register(info.Route, info.Method, queueName, info.Command, moduleId);
+            Register(info.Route, info.Method, queueName, info.Command, moduleId, ownerEnabled);
         }
     }
 }

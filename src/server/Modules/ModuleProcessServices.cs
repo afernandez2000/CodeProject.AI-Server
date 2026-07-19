@@ -458,6 +458,14 @@ namespace CodeProject.AI.Server.Modules
             if (processStatus!.Status != ProcessStatusType.AutoStart)
                 return false;
 
+            // (Re)register this module's routes now that we know it is actually starting. This is
+            // important for the runtime-enable path: a module disabled at boot registered its
+            // routes as "disabled" (so it lost ownership of any shared route to an enabled peer).
+            // Now that it's enabled and starting, re-run route setup so it claims those routes
+            // deterministically. SetupQueueAndRoutes reads the module's current AutoStart state and
+            // BackendRouteMap.Register resolves the shared-route ownership (enabled wins).
+            SetupQueueAndRoutes(module);
+
             Process? process = null;
             try
             {
@@ -636,21 +644,24 @@ namespace CodeProject.AI.Server.Modules
                 return false;
             }
 
-            // Do not register routes for modules that are not set to auto-start. Routes are
-            // registered per-queue, and if two modules share the same routes, only one can serve
-            // them. A module with AutoStart=false should not claim routes over one that is active.
-            if (module.LaunchSettings?.AutoStart == false)
-                return false;
+            // We register routes for ALL valid modules (including AutoStart=false ones) so a
+            // module that is disabled at boot but enabled later at runtime can still claim its
+            // routes. Ownership of shared routes is resolved deterministically inside
+            // BackendRouteMap.Register: an enabled (AutoStart=true) module always wins over a
+            // disabled (AutoStart=false) one, regardless of registration order. This lets a
+            // successor module (enabled) take over routes shared with a deprecated predecessor
+            // (disabled) without depending on non-deterministic module iteration order.
+            bool ownerEnabled = module.LaunchSettings?.AutoStart != false;
 
             _queueServices.EnsureQueueExists(module.LaunchSettings!.Queue);
 
             // Add the routes the module has defined
             foreach (ModuleRouteInfo routeInfo in module.RouteMaps)
-                _routeMap.Register(routeInfo, module.LaunchSettings!.Queue!, module.ModuleId);
+                _routeMap.Register(routeInfo, module.LaunchSettings!.Queue!, module.ModuleId, ownerEnabled);
 
             // Add the system routes
             foreach (ModuleRouteInfo routeInfo in ModuleRouteInfo.SystemDefaultRouteMaps)
-                _routeMap.Register(routeInfo, module.LaunchSettings!.Queue!, module.ModuleId);
+                _routeMap.Register(routeInfo, module.LaunchSettings!.Queue!, module.ModuleId, ownerEnabled);
 
             return true;
         }
