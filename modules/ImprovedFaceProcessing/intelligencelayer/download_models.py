@@ -21,27 +21,29 @@ import tempfile
 TIER_MODELS = {
     "accurate": {
         "detector": {
-            "file": "det_10g.onnx",
+            "file": "scrfd_10g.onnx",
             "url":  "https://huggingface.co/public-data/insightface/resolve/main/models/buffalo_l/det_10g.onnx",
             "sha256": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91",
         },
         "recognizer": {
-            "file": "adaface_ir101_webface12m.pt",
+            "file": "adaface_ir101.pt",
             "url":  "https://huggingface.co/minchul/cvlface_adaface_ir101_webface12m/resolve/main/pretrained_model/model.pt",
             "sha256": "e312d79222d28027f146ed495e182e48fe0dddf404cdbbdabcccdbdd07cc3758",
         },
     },
     "fast": {
         "detector": {
-            # det_2.5g.onnx is not available as a standalone file;
-            # it lives inside buffalo_m.zip.  download_tier() handles the
-            # zip-fetch-and-extract step transparently.
-            "file": "det_2.5g.onnx",
+            # scrfd_2.5g.onnx is not available as a standalone file;
+            # it lives inside buffalo_m.zip as det_2.5g.onnx.
+            # download_tier() handles the zip-fetch-and-extract step
+            # transparently, saving the result under the canonical name.
+            "file": "scrfd_2.5g.onnx",
+            "zip_entry": "det_2.5g.onnx",   # actual basename inside the zip
             "url":  "https://huggingface.co/vladmandic/insightface-faceanalysis/resolve/main/buffalo_m.zip",
             "sha256": "041f73f47371333d1d17a6fee6c8ab4e6aecabefe398ff32cca4e2d5eaee0af9",
         },
         "recognizer": {
-            "file": "adaface_ir50_ms1mv2.pt",
+            "file": "adaface_ir50.pt",
             "url":  "https://huggingface.co/minchul/cvlface_adaface_ir50_ms1mv2/resolve/main/pretrained_model/model.pt",
             "sha256": "b9401a04c1f3e782ac4faa36a255619ef25cf2474321d395412b27a67b47cf7d",
         },
@@ -80,28 +82,32 @@ def _download_direct(spec: dict, dest: str) -> None:
 def _download_from_zip(spec: dict, dest: str) -> None:
     """
     Download a zip archive and extract the target .onnx from it.
-    Used for det_2.5g.onnx which ships only inside buffalo_m.zip.
+    Used for scrfd_2.5g.onnx which ships only inside buffalo_m.zip
+    as det_2.5g.onnx; the extracted file is saved under the canonical name.
     """
     if os.path.exists(dest):
         return
-    target_name = spec["file"]          # e.g. "det_2.5g.onnx"
-    zip_url     = spec["url"]
-    print(f"Downloading zip for {target_name} ({zip_url}) …")
+    # zip_entry is the real basename inside the archive; "file" is the
+    # canonical save name.  Fall back to "file" for archives where both
+    # names happen to match.
+    zip_entry_name = spec.get("zip_entry", spec["file"])
+    zip_url        = spec["url"]
+    print(f"Downloading zip for {zip_entry_name} → {spec['file']} ({zip_url}) …")
     with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
         tmp_path = tmp.name
     try:
         _fetch(zip_url, tmp_path)
         with zipfile.ZipFile(tmp_path, "r") as zf:
-            # Find the entry whose basename matches our target file
-            matches = [n for n in zf.namelist() if os.path.basename(n) == target_name]
+            # Find the entry whose basename matches the real zip entry name
+            matches = [n for n in zf.namelist() if os.path.basename(n) == zip_entry_name]
             if not matches:
                 raise FileNotFoundError(
-                    f"{target_name} not found inside zip downloaded from {zip_url}. "
+                    f"{zip_entry_name} not found inside zip downloaded from {zip_url}. "
                     f"Available entries: {zf.namelist()}"
                 )
             with zf.open(matches[0]) as src, open(dest, "wb") as out:
                 out.write(src.read())
-        print(f"  extracted {target_name} → {dest}")
+        print(f"  extracted {zip_entry_name} → {dest}")
     finally:
         os.unlink(tmp_path)
 
