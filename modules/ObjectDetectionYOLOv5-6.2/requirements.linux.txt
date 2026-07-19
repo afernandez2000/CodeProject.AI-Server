@@ -1,4 +1,4 @@
-#! Python3.7
+#! Python3.11
 
 opencv-python-headless==4.8.1.78    # Installing OpenCV (headless), the Open source Computer Vision library
 numpy==1.26.0                       # Installing NumPy, a package for scientific computing
@@ -18,11 +18,11 @@ ipython                             # Installing ipython, for interactive notebo
 # PyTorch-DirectML not working for this module
 # torch-directml                # Installing the PyTorch DirectML plugin
 
-# CPU specific Torch 1.8.0. Size ~531Mb
--f https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==1.8.0+cpu                    # Installing PyTorch, for Tensor computation and Deep neural networks
--f https://download.pytorch.org/whl/cpu/torch_stable.html
-torchvision==0.9.0+cpu              # Installing TorchVision, for Computer Vision based AI
+# CPU specific Torch. (torch 1.8 has no Python 3.11 wheels, so we use 2.x)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.13.0+cpu                   # Installing PyTorch, for Tensor computation and Deep neural networks
+--extra-index-url https://download.pytorch.org/whl/cpu
+torchvision==0.28.0+cpu             # Installing TorchVision, for Computer Vision based AI
 
 # CPU specific Torch 1.13.0. Size ~830Mb
 # --extra-index-url https://download.pytorch.org/whl/cpu

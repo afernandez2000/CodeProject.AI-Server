@@ -5,6 +5,22 @@ import time
 from threading import Lock
 
 import torch
+
+# ---------------------------------------------------------------------------
+# PyTorch 2.6+ changed torch.load()'s default to weights_only=True, which
+# rejects the pickled model classes inside our (trusted, local) YOLOv5 .pt
+# files. Restore the previous behaviour so the models load. This is required
+# when running on RTX 50-series (Blackwell / sm_120) GPUs, which need
+# torch 2.7+ (cu128 wheels).
+if not getattr(torch.load, "_cpai_weights_only_default", False):
+    _cpai_orig_torch_load = torch.load
+    def _cpai_torch_load(*args, **kwargs):
+        kwargs.setdefault("weights_only", False)
+        return _cpai_orig_torch_load(*args, **kwargs)
+    _cpai_torch_load._cpai_weights_only_default = True
+    torch.load = _cpai_torch_load
+# ---------------------------------------------------------------------------
+
 from yolov5.models.common import DetectMultiBackend, AutoShape
 from PIL import UnidentifiedImageError
 

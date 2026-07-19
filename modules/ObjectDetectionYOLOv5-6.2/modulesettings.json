@@ -19,7 +19,7 @@
       "LaunchSettings": {
         "AutoStart": true,
         "FilePath": "detect_adapter.py",
-        "Runtime": "python3.8",
+        "Runtime": "python3.11",
         "RuntimeLocation": "Shared",
         "PostStartPauseSecs": 1,          // Generally 1 if using GPU, 0 for CPU
         "Queue": "objectdetection_queue", // We make all Object detectors use the same queue.

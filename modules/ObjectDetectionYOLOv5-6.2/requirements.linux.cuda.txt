@@ -1,19 +1,23 @@
-#! Python3.7
+#! Python3.11
 
 # General CUDA requirements for Linux (fallback if other CUDA-specific files aren't eligible)
 
 Pandas                          # Installing Pandas, a data analysis / data manipulation tool
 CoreMLTools                     # Installing CoreMLTools, for working with .mlmodel format models
 OpenCV-Python                   # Installing OpenCV, the Open source Computer Vision library
-Pillow<10.0.0                   # Installing Pillow, a Python Image Library
+Pillow                          # Installing Pillow, a Python Image Library
 SciPy                           # Installing SciPy, a library for mathematics, science, and engineering
 PyYAML                          # Installing PyYAML, a library for reading configuration files
 
-## For CUDA 11.7 (NOT torch 2.0+)
---find-links https://download.pytorch.org/whl/torch_stable.html
-torch==1.13.0+cu117             # Installing PyTorch, an open source machine learning framework
---find-links https://download.pytorch.org/whl/torch_stable.html
-torchvision==0.14.0+cu117       # Installing TorchVision, for working with computer vision models
+## For CUDA 13.0 (Blackwell / RTX 50-series, compute capability sm_120).
+## cu130 wheels; their bundled cuDNN 9.20 is broken on sm_120, so we pin cuDNN 9.24 below.
+--extra-index-url https://download.pytorch.org/whl/cu130
+torch==2.13.0+cu130             # Installing PyTorch, an open source machine learning framework
+--extra-index-url https://download.pytorch.org/whl/cu130
+torchvision==0.28.0+cu130       # Installing TorchVision, for working with computer vision models
+# NOTE: cuDNN 9.24 is force-installed in post_install.sh. It cannot go here because
+# the installer skips version pins for packages already present by name (torch
+# pulls the broken cuDNN 9.20 first).
 
 yolov5==6.2.3                   # Installing Ultralytics YoloV5 package for object detection in images
 
