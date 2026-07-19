@@ -1,13 +1,9 @@
-import os
-# Ensure onnxruntime can find torch's cu13 CUDA libs BEFORE it is imported.
-def _add_cu13_libpath():
-    here = os.path.dirname(os.path.realpath(__file__))
-    venv = os.path.normpath(os.path.join(here, "..", "..", "..",
-             "runtimes", "bin", "ubuntu", "python311", "venv",
-             "lib", "python3.11", "site-packages", "nvidia", "cu13", "lib"))
-    if os.path.isdir(venv):
-        os.environ["LD_LIBRARY_PATH"] = venv + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
-_add_cu13_libpath()
+import os, sys
+# Ensure onnxruntime can find the venv's cu13 CUDA libs BEFORE it is imported
+# (cross-platform: Linux LD_LIBRARY_PATH re-exec / Windows add_dll_directory).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _cuda_libpath import ensure_cuda_libpath
+ensure_cuda_libpath()
 
 from collections import namedtuple
 from insightface.model_zoo import model_zoo

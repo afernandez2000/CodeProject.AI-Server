@@ -1,0 +1,24 @@
+#! Python3.11
+
+# Windows + NVIDIA GPU requirements.
+#
+# torch 2.13.0+cu130 (CUDA 13.0) supports RTX 50-series (Blackwell / sm_120) and
+# 40/30-series; needs a recent NVIDIA driver. cuDNN 9.24 + the onnxruntime CPU/GPU
+# cleanup are handled in post_install.bat (see that file for why they can't live
+# here). Windows CUDA DLL discovery for onnxruntime is handled in the module code
+# (intelligencelayer/_cuda_libpath.py -> os.add_dll_directory).
+
+numpy
+opencv-python
+Pillow
+scikit-image
+
+--extra-index-url https://download.pytorch.org/whl/cu130
+torch==2.13.0+cu130
+--extra-index-url https://download.pytorch.org/whl/cu130
+torchvision==0.28.0+cu130
+
+onnxruntime-gpu
+insightface
+
+CodeProject-AI-SDK

@@ -6,21 +6,13 @@ Exposes:
 """
 
 # ---------------------------------------------------------------------------
-# CUDA library path shim (must run before any import that loads onnxruntime)
+# CUDA library path shim (must run before any import that loads onnxruntime).
+# Cross-platform (Linux re-exec / Windows add_dll_directory) — see _cuda_libpath.
 # ---------------------------------------------------------------------------
 import os, sys  # noqa: E401 – intentional early double-import
-
-def _ensure_cuda_libpath():
-    here = os.path.dirname(os.path.realpath(__file__))
-    libdir = os.path.normpath(os.path.join(
-        here, "..", "..", "..", "runtimes", "bin", "ubuntu", "python311",
-        "venv", "lib", "python3.11", "site-packages", "nvidia", "cu13", "lib"))
-    cur = os.environ.get("LD_LIBRARY_PATH", "")
-    if os.path.isdir(libdir) and libdir not in cur.split(os.pathsep):
-        os.environ["LD_LIBRARY_PATH"] = libdir + os.pathsep + cur
-        os.execv(sys.executable, [sys.executable] + sys.argv)  # re-exec so C loader sees it
-
-_ensure_cuda_libpath()
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _cuda_libpath import ensure_cuda_libpath
+ensure_cuda_libpath()
 
 # ---------------------------------------------------------------------------
 # Standard library
