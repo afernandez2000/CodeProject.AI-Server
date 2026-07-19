@@ -629,12 +629,18 @@ namespace CodeProject.AI.Server.Modules
                 _logger.LogWarning($"No queue specified for {module.Name}");
                 return false;
             }
-                
+
             if (module.RouteMaps?.Any() != true)
             {
                 _logger.LogWarning($"No routes defined for {module.Name}");
                 return false;
             }
+
+            // Do not register routes for modules that are not set to auto-start. Routes are
+            // registered per-queue, and if two modules share the same routes, only one can serve
+            // them. A module with AutoStart=false should not claim routes over one that is active.
+            if (module.LaunchSettings?.AutoStart == false)
+                return false;
 
             _queueServices.EnsureQueueExists(module.LaunchSettings!.Queue);
 

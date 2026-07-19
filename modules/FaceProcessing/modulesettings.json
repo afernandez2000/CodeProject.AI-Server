@@ -1,39 +1,43 @@
 {
   "Modules": {
 
-    "ImprovedFaceProcessing": {
-      "Name": "Improved Face Processing",
-      "Version": "1.0.0",
+    "FaceProcessing": {
+      "Name": "Face Processing",
+      "Version": "1.13.0",
 
       "PublishingInfo" : {
-        "Description": "Accuracy-first face processing using SCRFD detection and AdaFace recognition.",
+        "Description": "A number of Face image APIs including detect, recognize, and compare.",
         "Category": "Face Recognition",
-        "Stack": "Python, ONNX, PyTorch",
+        "Stack": "Python, PyTorch",
         "License": "GPL-3.0",
         "LicenseUrl": "https://opensource.org/licenses/GPL-3.0",
         "Author": "Chris Maunder, Matthew Dennis",
         "Homepage": "https://github.com/codeproject/CodeProject.AI-Server/",
-        "BasedOn": "InsightFace SCRFD + AdaFace",
+        "BasedOn": "Deepstack",
         "BasedOnUrl": "https://github.com/johnolafenwa/DeepStack"
       },
 
       "LaunchSettings": {
-        "AutoStart": true,
-        "FilePath": "intelligencelayer/improved_face.py",
+        "AutoStart": false,
+        "FilePath": "intelligencelayer/face.py",
         "Runtime": "python3.11",
         "RuntimeLocation": "Shared",
         "PostStartPauseSecs": 3,        // 1 if using GPU, 0 for CPU
-        "Queue": "improvedfaceprocessing_queue",
+        "Queue": "faceprocessing_queue",// default is lower(module_id) + '_queue'
         "Parallelism": 0                // 0 = Default = number of CPUs / 2
       },
 
       "EnvironmentVariables": {
+        "YOLOv5_AUTOINSTALL": "false",
+        "YOLOv5_VERBOSE": "false",
+
+        "PROFILE": "desktop_gpu",
+        "USE_CUDA": "True",
+        "MODE": "MEDIUM",
+
         "APPDIR": "%CURRENT_MODULE_PATH%\\intelligencelayer",
         "DATA_DIR": "%DATA_DIR%",
-        "MODELS_DIR": "%CURRENT_MODULE_PATH%\\assets",
-
-        "MODEL_TIER":       "auto",   // auto | accurate | fast
-        "LD_LIBRARY_PATH":  "%CURRENT_MODULE_PATH%/../../runtimes/bin/ubuntu/python311/venv/lib/python3.11/site-packages/nvidia/cu13/lib"
+        "MODELS_DIR": "%CURRENT_MODULE_PATH%\\assets"
       },
 
       "GpuOptions" : {
@@ -46,28 +50,53 @@
       "InstallOptions" : {
         "Platforms": [ "all", "!jetson" ],
         "ModuleReleases": [               // Which server version is compatible with each version of this module.
-          { "ModuleVersion": "1.0.0", "ServerVersionRange": [ "2.8.0", "" ], "ReleaseDate": "2026-07-19", "ReleaseNotes": "SCRFD + AdaFace accuracy-first pipeline", "Importance": "Major" }
+          { "ModuleVersion": "1.0",    "ServerVersionRange": [ "1.0",   "2.0.8"  ], "ReleaseDate": "2022-03-01" },
+          { "ModuleVersion": "1.2",    "ServerVersionRange": [ "2.1",   "2.1.12" ], "ReleaseDate": "2023-03-20" },
+          { "ModuleVersion": "1.3",    "ServerVersionRange": [ "2.1",   "2.1.12" ], "ReleaseDate": "2023-05-17" },
+          { "ModuleVersion": "1.4",    "ServerVersionRange": [ "2.1",   "2.1.12" ], "ReleaseDate": "2023-08-05", "ReleaseNotes": "Bugs in error reporting corrected", "Importance": "Minor" },
+          { "ModuleVersion": "1.5",    "ServerVersionRange": [ "2.1",   "2.1.12" ], "ReleaseDate": "2023-08-12", "ReleaseNotes": "PyTorch version downgrade" },
+          { "ModuleVersion": "1.6",    "ServerVersionRange": [ "2.2",   "2.2.4"  ], "ReleaseDate": "2023-09-09", "ReleaseNotes": "Updated installer" },
+          { "ModuleVersion": "1.7",    "ServerVersionRange": [ "2.2",   "2.2.4"  ], "ReleaseDate": "2023-09-16", "ReleaseNotes": "Updates to help Blue Iris users" },
+          { "ModuleVersion": "1.8",    "ServerVersionRange": [ "2.3.0", "2.3.0"  ], "ReleaseDate": "2023-10-01", "ReleaseNotes": "Updated to match new installer SDK." },
+          { "ModuleVersion": "1.8.1",  "ServerVersionRange": [ "2.3.1", "2.3.5"  ], "ReleaseDate": "2023-10-10", "ReleaseNotes": "Updated to match new installer SDK." },
+          { "ModuleVersion": "1.8.2",  "ServerVersionRange": [ "2.3.5", "2.3.5"  ], "ReleaseDate": "2023-11-06", "ReleaseNotes": "Removed Raspberry Pi / Jetson support.", "Importance": "Minor" },
+          { "ModuleVersion": "1.8.3",  "ServerVersionRange": [ "2.4.0", "2.4.0"  ], "ReleaseDate": "2023-12-03", "ReleaseNotes": "Installer updates, Mesh support.", "Importance": "Minor" },
+          { "ModuleVersion": "1.8.4",  "ServerVersionRange": [ "2.4.1", "2.4.1"  ], "ReleaseDate": "2023-12-06", "ReleaseNotes": "Updated modulesettings schema", "Importance": "Minor" },
+          { "ModuleVersion": "1.8.5",  "ServerVersionRange": [ "2.4.2", "2.4.9"  ], "ReleaseDate": "2023-12-09", "ReleaseNotes": "Installer updates", "Importance": "Minor" },
+          { "ModuleVersion": "1.9.0",  "ServerVersionRange": [ "2.5.0-RC1", "2.5.0-RC5" ], "ReleaseDate": "2024-01-06", "ReleaseNotes": "Additions for dynamic explorer UI" },
+          { "ModuleVersion": "1.9.1",  "ServerVersionRange": [ "2.5.0-RC1", "2.5.0-RC5" ], "ReleaseDate": "2024-01-13", "ReleaseNotes": "Changes to SDK" },
+          { "ModuleVersion": "1.9.2",  "ServerVersionRange": [ "2.5.0-RC6", "2.7.0" ],     "ReleaseDate": "2024-01-16", "ReleaseNotes": "Updated modulesettings schema" },
+          { "ModuleVersion": "1.9.3",  "ServerVersionRange": [ "2.5.0-RC6", "2.7.0" ],     "ReleaseDate": "2024-01-18", "ReleaseNotes": "Updated explorer" },
+          { "ModuleVersion": "1.10.0", "ServerVersionRange": [ "2.5.0-RC6", "2.7.0" ],     "ReleaseDate": "2024-01-21", "ReleaseNotes": "Module performance statistics added" },
+          { "ModuleVersion": "1.10.1", "ServerVersionRange": [ "2.5.2", "2.7.0"  ], "ReleaseDate": "2024-02-08", "ReleaseNotes": "Support for CodeProject.AI Server 2.5.2" },
+          { "ModuleVersion": "1.10.2", "ServerVersionRange": [ "2.5.2", "2.7.0"  ], "ReleaseDate": "2024-04-15", "ReleaseNotes": "Support for Raspberry Pi", "Importance": "Minor" },
+          { "ModuleVersion": "1.11.0", "ServerVersionRange": [ "2.6.5", "2.7.0"  ], "ReleaseDate": "2024-04-25", "ReleaseNotes": "Support for CodeProject.AI Server 2.6.5" },
+          { "ModuleVersion": "1.12.0", "ServerVersionRange": [ "2.8.0",     ""   ], "ReleaseDate": "2024-08-02", "ReleaseNotes": "Updated for server 2.8" },
+          { "ModuleVersion": "1.12.1", "ServerVersionRange": [ "2.8.0",     ""   ], "ReleaseDate": "2024-11-23", "ReleaseNotes": "Corrected deprecated torch.load" },
+          { "ModuleVersion": "1.12.2", "ServerVersionRange": [ "2.8.0",     ""   ], "ReleaseDate": "2024-12-05", "ReleaseNotes": "Tweaked torch.load for CUDA" },
+          { "ModuleVersion": "1.12.3", "ServerVersionRange": [ "2.8.0",     ""   ], "ReleaseDate": "2024-12-05", "ReleaseNotes": "Corrected req.txt for Windows/CUDA" },
+          { "ModuleVersion": "1.13.0", "ServerVersionRange": [ "2.8.0",     ""   ], "ReleaseDate": "2026-07-19", "ReleaseNotes": "Python 3.11 + PyTorch 2.11 (CUDA 12.8) for RTX 50-series (Blackwell) support", "Importance": "Minor" }
         ]
       },
 
       "ModelRequirements" : [{
-          "Task": "Face Detection",
-          "Architecture": "SCRFD",
-          "Format": "ONNX"
+          "Task": "Face Detection", 
+          "Architecture": "YOLOv5",
+          "Format": "PyTorch"
       },
       {
-          "Task": "Face Recognition",
-          "Architecture": "AdaFace IR",
+          "Task": "Face Classification",
+          "Architecture": "Bottleneck_IR",
           "Format": "PyTorch"
       }],
 
       "UIElements" : {
         "Menus": [{
-          "Label": "Model Tier",
+          "Label": "Half Precision",
           "Options": [
-            { "Label": "Auto",     "Setting": "MODEL_TIER", "Value": "auto"     },
-            { "Label": "Accurate", "Setting": "MODEL_TIER", "Value": "accurate" },
-            { "Label": "Fast",     "Setting": "MODEL_TIER", "Value": "fast"     }
+            { "Label": "Force on",    "Setting": "CPAI_HALF_PRECISION", "Value": "force"   },
+            { "Label": "Use Default", "Setting": "CPAI_HALF_PRECISION", "Value": "enable"  },
+            { "Label": "Disable",     "Setting": "CPAI_HALF_PRECISION", "Value": "disable" }
           ]
         }]
       },
