@@ -1,0 +1,17 @@
+#! Python3.11
+
+# CUDA requirements for Linux with CUDA installed
+
+numpy
+opencv-python
+Pillow
+scikit-image
+--extra-index-url https://download.pytorch.org/whl/cu130
+torch==2.13.0+cu130
+--extra-index-url https://download.pytorch.org/whl/cu130
+torchvision==0.28.0+cu130
+# NOTE: cuDNN 9.24 + onnxruntime cleanup handled in post_install.sh
+onnxruntime-gpu
+insightface
+CodeProject-AI-SDK
+

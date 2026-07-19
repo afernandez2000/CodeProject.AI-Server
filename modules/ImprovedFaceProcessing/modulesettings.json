@@ -19,7 +19,7 @@
 
       "LaunchSettings": {
         "AutoStart": false,
-        "FilePath": "improved_face.py",
+        "FilePath": "intelligencelayer/improved_face.py",
         "Runtime": "python3.11",
         "RuntimeLocation": "Shared",
         "PostStartPauseSecs": 3,        // 1 if using GPU, 0 for CPU

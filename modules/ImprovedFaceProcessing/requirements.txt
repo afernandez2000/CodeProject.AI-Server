@@ -1,0 +1,16 @@
+#! Python3.11
+
+# CPU requirements
+
+numpy
+opencv-python
+Pillow
+scikit-image
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.13.0+cpu
+--extra-index-url https://download.pytorch.org/whl/cpu
+torchvision==0.28.0+cpu
+onnxruntime
+insightface
+CodeProject-AI-SDK
+

@@ -6,10 +6,25 @@ Exposes:
 """
 
 # ---------------------------------------------------------------------------
+# CUDA library path shim (must run before any import that loads onnxruntime)
+# ---------------------------------------------------------------------------
+import os, sys  # noqa: E401 – intentional early double-import
+
+def _ensure_cuda_libpath():
+    here = os.path.dirname(os.path.realpath(__file__))
+    libdir = os.path.normpath(os.path.join(
+        here, "..", "..", "..", "runtimes", "bin", "ubuntu", "python311",
+        "venv", "lib", "python3.11", "site-packages", "nvidia", "cu13", "lib"))
+    cur = os.environ.get("LD_LIBRARY_PATH", "")
+    if os.path.isdir(libdir) and libdir not in cur.split(os.pathsep):
+        os.environ["LD_LIBRARY_PATH"] = libdir + os.pathsep + cur
+        os.execv(sys.executable, [sys.executable] + sys.argv)  # re-exec so C loader sees it
+
+_ensure_cuda_libpath()
+
+# ---------------------------------------------------------------------------
 # Standard library
 # ---------------------------------------------------------------------------
-import os
-import sys
 import time
 import threading
 import traceback
@@ -388,6 +403,14 @@ except ImportError:
     _SDK_AVAILABLE = False
 
 
+def _pil_to_bgr(pil_img) -> np.ndarray:
+    """Convert a PIL image (RGB or RGBA) to a BGR numpy array."""
+    if pil_img is None:
+        return None
+    rgb = np.array(pil_img.convert("RGB"))
+    return cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+
+
 if _SDK_AVAILABLE:
 
     class ImprovedFace_adapter(ModuleRunner):
@@ -537,7 +560,7 @@ if _SDK_AVAILABLE:
         def _do_detect(self, data: RequestData) -> JSON:
             try:
                 threshold = float(data.get_value("min_confidence", "0.4"))
-                bgr = data.get_image_from_request(0, "BGR")
+                bgr = _pil_to_bgr(data.get_image(0))
                 return self._pipeline.detect(bgr, threshold)
             except Exception as ex:
                 trace = "".join(traceback.TracebackException.from_exception(ex).format())
@@ -561,7 +584,7 @@ if _SDK_AVAILABLE:
                 inference_ms = 0
 
                 for i in range(num_files):
-                    bgr = data.get_image_from_request(i, "BGR")
+                    bgr = _pil_to_bgr(data.get_image(i))
                     if bgr is None:
                         continue
                     t0 = time.perf_counter()
@@ -622,7 +645,7 @@ if _SDK_AVAILABLE:
         def _do_recognize(self, data: RequestData) -> JSON:
             try:
                 threshold = float(data.get_value("min_confidence", str(self._pipeline.threshold)))
-                bgr = data.get_image_from_request(0, "BGR")
+                bgr = _pil_to_bgr(data.get_image(0))
                 return self._pipeline.recognize(bgr, threshold)
             except Exception as ex:
                 trace = "".join(traceback.TracebackException.from_exception(ex).format())
@@ -630,8 +653,8 @@ if _SDK_AVAILABLE:
 
         def _do_match(self, data: RequestData) -> JSON:
             try:
-                bgr1 = data.get_image_from_request(0, "BGR")
-                bgr2 = data.get_image_from_request(1, "BGR")
+                bgr1 = _pil_to_bgr(data.get_image(0))
+                bgr2 = _pil_to_bgr(data.get_image(1))
                 return self._pipeline.match(bgr1, bgr2)
             except Exception as ex:
                 trace = "".join(traceback.TracebackException.from_exception(ex).format())

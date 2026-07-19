@@ -151,8 +151,12 @@ def download_tier(tier: str, dest_dir: str) -> list:
 
 
 if __name__ == "__main__":
-    import sys
-    dest = sys.argv[1] if len(sys.argv) > 1 else "assets"
+    import argparse
+    parser = argparse.ArgumentParser(description="Download ImprovedFaceProcessing model weights")
+    parser.add_argument("--dest", default="assets",
+                        help="Destination directory for downloaded model files (default: assets)")
+    args = parser.parse_args()
+    dest = args.dest
     for t in ("accurate", "fast"):
         print(f"\n=== Tier: {t} ===")
         paths = download_tier(t, dest)
