@@ -1,9 +1,0 @@
-{
-  "Modules": {
-    "PythonSimple": {
-      "LaunchSettings": {
-        "Runtime": "python3.9"
-      }
-    }
-  }
-}
