@@ -27,5 +27,16 @@ if [ -f "${moduleDirPath}/intelligencelayer/download_models.py" ]; then
         moduleInstallErrors="Failed to download face models"
 fi
 
-# TODO: Check assets created and has files
-# moduleInstallErrors=...
+# Verify that all four canonical model files were actually downloaded and are non-empty.
+_required_assets=(
+    "${moduleDirPath}/assets/scrfd_10g.onnx"
+    "${moduleDirPath}/assets/scrfd_2.5g.onnx"
+    "${moduleDirPath}/assets/adaface_ir101.pt"
+    "${moduleDirPath}/assets/adaface_ir50.pt"
+)
+for _asset in "${_required_assets[@]}"; do
+    if [ ! -s "$_asset" ]; then
+        moduleInstallErrors="Required model asset missing or empty: $_asset"
+        break
+    fi
+done

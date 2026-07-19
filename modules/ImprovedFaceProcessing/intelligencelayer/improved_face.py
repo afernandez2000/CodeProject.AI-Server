@@ -86,10 +86,10 @@ class _MemoryGallery:
                 return "unknown", 0.0
             mat = np.stack([self._store[uid] for uid in ids])  # (N,512)
         emb = embedding.astype("float32")
-        sims = mat @ emb
-        i = int(sims.argmax())
-        best = float(sims[i])
-        return (ids[i], best) if best >= threshold else ("unknown", best)
+        raw_cos = mat @ emb
+        i = int(raw_cos.argmax())
+        sim_remapped = float((raw_cos[i] + 1.0) / 2.0)
+        return (ids[i], sim_remapped) if sim_remapped >= threshold else ("unknown", sim_remapped)
 
 
 # ===========================================================================

@@ -6,7 +6,7 @@
       "Version": "1.0.0",
 
       "PublishingInfo" : {
-        "Description": "Accuracy-first face processing using SCRFD detection and AdaFace recognition.",
+        "Description": "Accuracy-first face processing using SCRFD detection and AdaFace recognition. Uses research-oriented model weights (InsightFace SCRFD + AdaFace IR) — not guaranteed commercially-license-clean; review upstream licenses before commercial deployment.",
         "Category": "Face Recognition",
         "Stack": "Python, ONNX, PyTorch",
         "License": "GPL-3.0",
@@ -14,7 +14,7 @@
         "Author": "Chris Maunder, Matthew Dennis",
         "Homepage": "https://github.com/codeproject/CodeProject.AI-Server/",
         "BasedOn": "InsightFace SCRFD + AdaFace",
-        "BasedOnUrl": "https://github.com/johnolafenwa/DeepStack"
+        "BasedOnUrl": "https://github.com/deepinsight/insightface"
       },
 
       "LaunchSettings": {
@@ -272,7 +272,7 @@
               "Name": "min_confidence",
               "Type": "Float",
               "Description": "The minimum confidence level for an object will be detected. In the range 0.0 to 1.0.",
-              "DefaultValue": 0.4,
+              "DefaultValue": 0.64,
               "MinValue": 0.0,
               "MaxValue": 1.0
             }

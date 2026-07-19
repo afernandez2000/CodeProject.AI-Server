@@ -14,10 +14,11 @@ def select_tier(has_cuda, vram_bytes, override):
 def onnx_providers(has_cuda):
     return ["CUDAExecutionProvider", "CPUExecutionProvider"] if has_cuda else ["CPUExecutionProvider"]
 
-# Per-tier model filenames + a starting cosine threshold (recalibrated in Task 9).
+# Per-tier model filenames + recognition threshold on the remapped (cos+1)/2 scale [0,1].
+# Raw cosine 0.28 → remapped (0.28+1)/2 = 0.64.
 TIER = {
-    "accurate": {"detector": "scrfd_10g.onnx",  "recognizer": "adaface_ir101.pt", "det_size": 640, "threshold": 0.28},
-    "fast":     {"detector": "scrfd_2.5g.onnx", "recognizer": "adaface_ir50.pt",  "det_size": 640, "threshold": 0.28},
+    "accurate": {"detector": "scrfd_10g.onnx",  "recognizer": "adaface_ir101.pt", "det_size": 640, "threshold": 0.64},
+    "fast":     {"detector": "scrfd_2.5g.onnx", "recognizer": "adaface_ir50.pt",  "det_size": 640, "threshold": 0.64},
 }
 
 class Options:
