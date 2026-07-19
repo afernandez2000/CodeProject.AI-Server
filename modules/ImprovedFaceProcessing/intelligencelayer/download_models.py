@@ -11,7 +11,6 @@
 #   Recognizer (fast):    AdaFace IR-50 MS1MV2 .pt —
 #                          minchul/cvlface_adaface_ir50_ms1mv2 on HuggingFace
 #
-# sha256 values are left empty; checksum check is skipped when sha256 == "".
 
 import os
 import hashlib
@@ -112,7 +111,7 @@ def download_tier(tier: str, dest_dir: str) -> list:
     Download all models for *tier* ('accurate' or 'fast') into *dest_dir*.
 
     Returns a list of absolute paths to the downloaded files.
-    Checksum verification is skipped when sha256 == "" (not yet computed).
+    Checksum verification runs on every downloaded file using the sha256 field.
     """
     if tier not in TIER_MODELS:
         raise ValueError(f"Unknown tier {tier!r}; valid values: {list(TIER_MODELS)}")
@@ -131,14 +130,14 @@ def download_tier(tier: str, dest_dir: str) -> list:
         else:
             _download_direct(spec, dest)
 
-        # Checksum — skipped when sha256 is empty (not yet populated)
         expected = spec.get("sha256", "")
         if expected and not expected.startswith("<"):
             actual = _sha256(dest)
-            assert actual == expected, (
-                f"SHA-256 mismatch for {spec['file']}: "
-                f"expected {expected}, got {actual}"
-            )
+            if actual != expected:
+                raise ValueError(
+                    f"SHA-256 mismatch for {spec['file']}: "
+                    f"expected {expected}, got {actual}"
+                )
 
         out_paths.append(dest)
 

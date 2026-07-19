@@ -10,8 +10,11 @@
         "Category": "Face Recognition",
         "Stack": "Python, ONNX, PyTorch",
         "License": "GPL-3.0",
+        "LicenseUrl": "https://opensource.org/licenses/GPL-3.0",
         "Author": "Chris Maunder, Matthew Dennis",
-        "BasedOn": "InsightFace SCRFD + AdaFace"
+        "Homepage": "https://github.com/codeproject/CodeProject.AI-Server/",
+        "BasedOn": "InsightFace SCRFD + AdaFace",
+        "BasedOnUrl": "https://github.com/johnolafenwa/DeepStack"
       },
 
       "LaunchSettings": {
@@ -26,7 +29,7 @@
 
       "EnvironmentVariables": {
         "APPDIR": "%CURRENT_MODULE_PATH%\\intelligencelayer",
-        "DATA_DIR": "/etc/codeproject/ai",
+        "DATA_DIR": "%DATA_DIR%",
         "MODELS_DIR": "%CURRENT_MODULE_PATH%\\assets",
 
         "MODEL_TIER":       "auto",   // auto | accurate | fast

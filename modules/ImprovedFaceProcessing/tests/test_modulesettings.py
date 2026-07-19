@@ -4,7 +4,7 @@ BASE = os.path.dirname(os.path.dirname(__file__))
 
 def _load_settings():
     raw = open(os.path.join(BASE, "modulesettings.json"), encoding="utf-8").read()
-    raw = re.sub(r"//.*", "", raw)               # strip // comments
+    raw = re.sub(r"(?<!:)//.*", "", raw)          # strip // comments (preserve https://)
     return json.loads(raw)
 
 def test_module_identity_and_routes():
