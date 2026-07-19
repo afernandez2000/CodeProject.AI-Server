@@ -14,6 +14,7 @@ import time
 import threading
 import traceback
 
+import cv2
 import numpy as np
 
 # ---------------------------------------------------------------------------
@@ -135,8 +136,15 @@ class Pipeline:
     # Public API
     # -----------------------------------------------------------------------
 
-    def detect(self, bgr) -> dict:
+    def detect(self, bgr, threshold: float = 0.4) -> dict:
         """Detect faces in a BGR NumPy image.
+
+        Parameters
+        ----------
+        bgr       : BGR NumPy image
+        threshold : minimum SCRFD detection score (0–1) to keep a face.
+                    Distinct from the cosine-similarity threshold used by
+                    ``recognize``/``match``.
 
         Returns a FaceProcessing-shaped dict::
 
@@ -149,6 +157,9 @@ class Pipeline:
             t0 = time.perf_counter()
             faces = self.detector.detect(bgr)
             inference_ms = int((time.perf_counter() - t0) * 1000)
+
+            # Apply detection-score threshold (SCRFD det_score, ~0.5–0.9 scale)
+            faces = [f for f in faces if f.score >= threshold]
 
             predictions = [
                 {
@@ -201,7 +212,6 @@ class Pipeline:
             face = max(faces, key=lambda f: f.score)
             if face.kps is None:
                 # Fall back to simple crop + resize when keypoints unavailable
-                import cv2
                 x1, y1, x2, y2 = face.bbox
                 crop = bgr[max(0, y1):y2, max(0, x1):x2]
                 crop = cv2.resize(crop, (112, 112))
@@ -209,13 +219,14 @@ class Pipeline:
                 crop = align_face(bgr, face.kps, image_size=112)
 
             embedding = self.recognizer.embed(crop)
+            is_update = userid in self.gallery.list_ids()
             self.gallery.add(userid, embedding)
             self.gallery.load()  # refresh in-memory index
 
             inference_ms = int((time.perf_counter() - t0) * 1000)
             return {
                 "success": True,
-                "message": "face added",
+                "message": "face updated" if is_update else "face added",
                 "inferenceMs": inference_ms,
             }
         except Exception as ex:
@@ -241,7 +252,6 @@ class Pipeline:
         if bgr is None:
             return {"success": False, "error": "No image supplied", "predictions": [], "count": 0, "inferenceMs": 0}
         try:
-            import cv2
             t0 = time.perf_counter()
             faces = self.detector.detect(bgr)
             inference_ms = int((time.perf_counter() - t0) * 1000)
@@ -317,7 +327,6 @@ class Pipeline:
         if bgr1 is None or bgr2 is None:
             return {"success": False, "error": "One or both images are missing", "inferenceMs": 0}
         try:
-            import cv2
             t0 = time.perf_counter()
 
             faces1 = self.detector.detect(bgr1)
@@ -529,7 +538,7 @@ if _SDK_AVAILABLE:
             try:
                 threshold = float(data.get_value("min_confidence", "0.4"))
                 bgr = data.get_image_from_request(0, "BGR")
-                return self._pipeline.detect(bgr)
+                return self._pipeline.detect(bgr, threshold)
             except Exception as ex:
                 trace = "".join(traceback.TracebackException.from_exception(ex).format())
                 return {"success": False, "error": "An Error occurred during processing", "err_trace": trace}
@@ -550,7 +559,6 @@ if _SDK_AVAILABLE:
                 # the mean of all provided images).
                 embeddings = []
                 inference_ms = 0
-                import cv2
 
                 for i in range(num_files):
                     bgr = data.get_image_from_request(i, "BGR")
@@ -580,10 +588,12 @@ if _SDK_AVAILABLE:
                 norm = np.linalg.norm(mean_emb)
                 if norm > 0:
                     mean_emb /= norm
+                is_update = userid in self._pipeline.gallery.list_ids()
                 self._pipeline.gallery.add(userid, mean_emb)
                 self._pipeline.gallery.load()
 
-                return {"success": True, "message": "face added", "inferenceMs": inference_ms}
+                msg = "face updated" if is_update else "face added"
+                return {"success": True, "message": msg, "inferenceMs": inference_ms}
 
             except Exception as ex:
                 trace = "".join(traceback.TracebackException.from_exception(ex).format())
