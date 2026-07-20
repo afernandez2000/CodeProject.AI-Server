@@ -4,10 +4,26 @@ _orig = torch.load
 torch.load = functools.partial(_orig, weights_only=False)
 from ultralytics import YOLO
 
+def _disable_fuse(yolo):
+    """Neutralise Ultralytics' Conv+BN fuse pass.
+
+    The newest Ultralytics fuse() does an unguarded `delattr(m, "bn")`, which
+    raises "'Conv' object has no attribute 'bn'" on YOLO26 models whose Conv
+    blocks carry no BatchNorm. Fusing only folds BN into the preceding Conv as
+    an inference-speed optimisation, so making it a no-op is correctness-safe.
+    We patch the underlying nn.Module instance (the object AutoBackend calls
+    .fuse() on during predict) to return itself unchanged.
+    """
+    inner = getattr(yolo, "model", None)
+    if inner is not None and hasattr(inner, "fuse"):
+        inner.fuse = lambda *a, **k: inner
+    return yolo
+
+
 class UltralyticsEngine:
     def __init__(self, model_path_or_id, use_cuda):
         self.device = 0 if use_cuda else "cpu"
-        self.model = YOLO(model_path_or_id)   # auto-downloads known ids; loads local .pt
+        self.model = _disable_fuse(YOLO(model_path_or_id))   # auto-downloads known ids; loads local .pt
 
     def detect(self, image, min_confidence):
         r = self.model.predict(source=image, conf=float(min_confidence),
