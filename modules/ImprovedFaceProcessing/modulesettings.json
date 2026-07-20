@@ -33,6 +33,7 @@
         "MODELS_DIR": "%CURRENT_MODULE_PATH%\\assets",
 
         "MODEL_TIER":       "auto",   // auto | accurate | fast
+        "GPU_MEM_LIMIT_MB": "0",      // 0 = unbounded; e.g. 3500 caps the SCRFD onnxruntime GPU arena when sharing a GPU
         "LD_LIBRARY_PATH":  "%CURRENT_MODULE_PATH%/../../runtimes/bin/ubuntu/python311/venv/lib/python3.11/site-packages/nvidia/cu13/lib"
       },
 
@@ -62,12 +63,22 @@
       }],
 
       "UIElements" : {
-        "Menus": [{
+        "Menus": [
+        {
           "Label": "Model Tier",
           "Options": [
             { "Label": "Auto",     "Setting": "MODEL_TIER", "Value": "auto"     },
             { "Label": "Accurate", "Setting": "MODEL_TIER", "Value": "accurate" },
             { "Label": "Fast",     "Setting": "MODEL_TIER", "Value": "fast"     }
+          ]
+        },
+        {
+          "Label": "GPU Memory Cap",
+          "Options": [
+            { "Label": "Unbounded",    "Setting": "GPU_MEM_LIMIT_MB", "Value": "0"    },
+            { "Label": "2 GB",         "Setting": "GPU_MEM_LIMIT_MB", "Value": "2048" },
+            { "Label": "3 GB",         "Setting": "GPU_MEM_LIMIT_MB", "Value": "3072" },
+            { "Label": "4 GB",         "Setting": "GPU_MEM_LIMIT_MB", "Value": "4096" }
           ]
         }]
       },

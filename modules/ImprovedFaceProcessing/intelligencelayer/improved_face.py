@@ -107,7 +107,8 @@ class Pipeline:
                  arch: str,
                  use_cuda: bool,
                  db_path: str,
-                 threshold: float):
+                 threshold: float,
+                 gpu_mem_limit_mb: int = 0):
 
         self.threshold = threshold
 
@@ -115,8 +116,23 @@ class Pipeline:
         providers = (["CUDAExecutionProvider", "CPUExecutionProvider"]
                      if use_cuda else ["CPUExecutionProvider"])
 
+        # Optional GPU-memory cap for the SCRFD onnxruntime arena. When the GPU
+        # is shared with another module, an uncapped arena (kNextPowerOfTwo +
+        # EXHAUSTIVE cudnn search) grabs multi-GB sticky blocks and starves the
+        # neighbour. gpu_mem_limit bounds it; kSameAsRequested + HEURISTIC stop
+        # it over-allocating. None = default (unbounded) behaviour.
+        provider_options = None
+        if use_cuda and gpu_mem_limit_mb and gpu_mem_limit_mb > 0:
+            provider_options = [
+                {"gpu_mem_limit": int(gpu_mem_limit_mb) * 1024 * 1024,
+                 "arena_extend_strategy": "kSameAsRequested",
+                 "cudnn_conv_algo_search": "HEURISTIC"},
+                {},  # CPUExecutionProvider — no options
+            ]
+
         # ---- detector (ONNX / SCRFD) ---------------------------------------
-        self.detector = ScrfdDetector(detector_path, providers, det_size=640)
+        self.detector = ScrfdDetector(detector_path, providers, det_size=640,
+                                      provider_options=provider_options)
 
         # ---- recognizer (PyTorch / AdaFace) --------------------------------
         # GPU-OOM → CPU fallback
@@ -426,24 +442,26 @@ if _SDK_AVAILABLE:
             # GPU-OOM fallback is handled inside Pipeline.__init__
             try:
                 self._pipeline = Pipeline(
-                    detector_path   = opts.detector_path,
-                    recognizer_path = opts.recognizer_path,
-                    arch            = "ir_101" if opts.tier == "accurate" else "ir_50",
-                    use_cuda        = opts.use_cuda,
-                    db_path         = opts.db_path,
-                    threshold       = opts.threshold,
+                    detector_path    = opts.detector_path,
+                    recognizer_path  = opts.recognizer_path,
+                    arch             = "ir_101" if opts.tier == "accurate" else "ir_50",
+                    use_cuda         = opts.use_cuda,
+                    db_path          = opts.db_path,
+                    threshold        = opts.threshold,
+                    gpu_mem_limit_mb = opts.gpu_mem_limit_mb,
                 )
             except Exception as ex:
                 # If GPU OOM at pipeline level, retry CPU
                 if opts.use_cuda and "out of memory" in str(ex).lower():
                     opts.use_cuda = False
                     self._pipeline = Pipeline(
-                        detector_path   = opts.detector_path,
-                        recognizer_path = opts.recognizer_path,
-                        arch            = "ir_101" if opts.tier == "accurate" else "ir_50",
-                        use_cuda        = False,
-                        db_path         = opts.db_path,
-                        threshold       = opts.threshold,
+                        detector_path    = opts.detector_path,
+                        recognizer_path  = opts.recognizer_path,
+                        arch             = "ir_101" if opts.tier == "accurate" else "ir_50",
+                        use_cuda         = False,
+                        db_path          = opts.db_path,
+                        threshold        = opts.threshold,
+                        gpu_mem_limit_mb = 0,   # CPU retry: no GPU cap needed
                     )
                 else:
                     raise

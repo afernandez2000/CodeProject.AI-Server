@@ -32,6 +32,15 @@ class Options:
                                "DATA_DIR", "/etc/codeproject/ai"))
         override         = ModuleOptions.getEnvVariable("MODEL_TIER", "auto")
 
+        # Optional cap (MB) on the SCRFD onnxruntime GPU arena. 0 = unbounded
+        # (default). Set this when sharing an 8 GiB card with another GPU module
+        # so the detector cannot grab all of VRAM. See Pipeline.__init__.
+        try:
+            self.gpu_mem_limit_mb = int(str(ModuleOptions.getEnvVariable(
+                                       "GPU_MEM_LIMIT_MB", "0")).strip())
+        except (TypeError, ValueError):
+            self.gpu_mem_limit_mb = 0
+
         self.use_cuda, vram = False, 0
         if self.enable_gpu:
             try:

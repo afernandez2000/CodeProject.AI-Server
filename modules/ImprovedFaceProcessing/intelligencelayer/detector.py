@@ -11,8 +11,14 @@ from insightface.model_zoo import model_zoo
 Face = namedtuple("Face", ["bbox", "score", "kps"])
 
 class ScrfdDetector:
-    def __init__(self, model_path, providers, det_size=640):
-        self.model = model_zoo.get_model(model_path, providers=providers)
+    def __init__(self, model_path, providers, det_size=640, provider_options=None):
+        kwargs = {"providers": providers}
+        # provider_options (e.g. gpu_mem_limit) flow through insightface's
+        # model_zoo -> PickableInferenceSession -> onnxruntime.InferenceSession.
+        # Only pass it when set so the default path stays byte-identical.
+        if provider_options is not None:
+            kwargs["provider_options"] = provider_options
+        self.model = model_zoo.get_model(model_path, **kwargs)
         ctx_id = 0 if any("CUDA" in p for p in providers) else -1
         self.model.prepare(ctx_id=ctx_id, input_size=(det_size, det_size))
 
