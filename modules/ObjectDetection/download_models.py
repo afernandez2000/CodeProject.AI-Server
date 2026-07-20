@@ -32,7 +32,12 @@ def _make_opener():
 
 
 def download_generic_model(dest_dir: str) -> None:
-    """Trigger Ultralytics to download yolo26n.pt into dest_dir."""
+    """Trigger Ultralytics to download yolo26n.pt into dest_dir (best-effort).
+
+    This requires ultralytics/torch which are installed by install.sh/install.bat.
+    If they are not yet available the download is skipped non-fatally — the weight
+    will be auto-downloaded by Ultralytics at first runtime use.
+    """
     os.makedirs(dest_dir, exist_ok=True)
     target = os.path.join(dest_dir, "yolo26n.pt")
     if os.path.isfile(target):
@@ -45,8 +50,21 @@ def download_generic_model(dest_dir: str) -> None:
     old_cwd = os.getcwd()
     os.chdir(dest_dir)
     try:
-        from ultralytics import YOLO  # noqa: PLC0415
+        try:
+            from ultralytics import YOLO  # noqa: PLC0415
+        except ImportError:
+            print(
+                "[download_models] NOTE: ultralytics not yet installed — yolo26n.pt will be "
+                "auto-downloaded at first runtime use. Skipping pre-download."
+            )
+            return
         YOLO("yolo26n.pt")
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"[download_models] NOTE: yolo26n.pt pre-download failed ({exc}) — "
+            "it will be auto-downloaded at first runtime use."
+        )
+        return
     finally:
         os.chdir(old_cwd)
 
@@ -133,8 +151,10 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    download_generic_model(args.dest)
+    # Required: IPcam custom models (stdlib-only — safe before pip installs)
     ok = download_custom_models(args.custom_dest)
+    # Best-effort: generic YOLO26 weight (needs ultralytics/torch)
+    download_generic_model(args.dest)
 
     if not ok:
         print(

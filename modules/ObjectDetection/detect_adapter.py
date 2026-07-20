@@ -71,14 +71,20 @@ class Detector:
         if cf:
             preds = [p for p in preds if p["label"].lower() in cf]
         count = len(preds)
-        label_str = ", ".join(p["label"] for p in preds) if preds else "nothing"
+        # Match ObjectDetectionYOLOv5-6.2 message format exactly (byte-parity)
+        if count > 3:
+            message = 'Found ' + ', '.join(p["label"] for p in preds[0:3]) + "..."
+        elif count > 0:
+            message = 'Found ' + ', '.join(p["label"] for p in preds)
+        else:
+            message = "No objects found"
         return {
             "success": True,
             "count": count,
             "predictions": preds,
             "inferenceMs": int(infer_ms),
             "processMs": int((perf_counter() - t0) * 1000),
-            "message": f"Found {count} object{'s' if count != 1 else ''}: {label_str}",
+            "message": message,
         }
 
     # ------------------------------------------------------------------
