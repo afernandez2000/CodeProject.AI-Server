@@ -31,9 +31,35 @@ class Detector:
     def __init__(self, opts):
         self.opts = opts
         self.router = ModelRouter(opts.use_CUDA)
+        self._custom_heal_attempted = False
         self._default_engine = self._build_default_engine(opts.use_CUDA)
         self._model_names: list = []
         self._models_last_checked = None
+
+    # ------------------------------------------------------------------
+    # Self-heal: recover missing CCTV custom weights on demand
+    # ------------------------------------------------------------------
+
+    def _heal_custom_models_once(self):
+        """Best-effort, one-shot download of the CCTV custom models.
+
+        Code-only deployments (e.g. re-extracting the module zip) leave the
+        gitignored weights missing. Fetch them on demand — once per process —
+        so a missing default/custom CCTV model self-heals instead of failing.
+        (yolo26* weights are auto-downloaded by Ultralytics, so they need no
+        self-heal here.)
+        """
+        if self._custom_heal_attempted:
+            return
+        self._custom_heal_attempted = True
+        try:
+            from download_models import download_custom_models
+            print("Object Detection: CCTV model weights missing — self-heal downloading…",
+                  flush=True)
+            download_custom_models(self.opts.custom_models_dir)
+            print("Object Detection: self-heal download complete.", flush=True)
+        except Exception as ex:
+            print(f"Object Detection: self-heal download failed ({ex}); continuing", flush=True)
 
     # ------------------------------------------------------------------
     # Engine construction with GPU-OOM → CPU fallback (mirrors FaceProcessing)
@@ -56,6 +82,8 @@ class Detector:
             path = os.path.join(opts.custom_models_dir, opts.default_weight)
             if not path.endswith(".pt"):
                 path += ".pt"
+            if not os.path.isfile(path):
+                self._heal_custom_models_once()   # self-heal missing CCTV weight
             return Yolov5Engine(path, use_cuda)
         else:
             # Ultralytics family: weight id (auto-download) or local .pt
@@ -106,6 +134,8 @@ class Detector:
             model_name = "ipcam-general"
 
         path = os.path.join(self.opts.custom_models_dir, model_name + ".pt")
+        if not os.path.isfile(path):
+            self._heal_custom_models_once()   # one-shot fetch of the CCTV models
         if not os.path.isfile(path):
             return {"success": False, "error": f"model {model_name} not found"}
 

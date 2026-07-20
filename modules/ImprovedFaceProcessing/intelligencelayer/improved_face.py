@@ -439,6 +439,24 @@ if _SDK_AVAILABLE:
 
             self.can_use_GPU = self.system_info.hasTorchCuda
 
+            # Self-heal: fetch missing tier weights before building the pipeline.
+            # Code-only deployments (e.g. re-extracting the module zip) leave the
+            # gitignored weights absent; download the resolved tier on demand so
+            # a missing model auto-recovers instead of failing initialisation.
+            try:
+                missing = [p for p in (opts.detector_path, opts.recognizer_path)
+                           if not os.path.exists(p)]
+                if missing:
+                    from download_models import download_tier
+                    print(f"Improved Face Processing: {len(missing)} weight file(s) missing "
+                          f"— self-heal downloading tier '{opts.tier}' to {opts.models_dir}…",
+                          flush=True)
+                    download_tier(opts.tier, opts.models_dir)
+                    print("Improved Face Processing: self-heal download complete.", flush=True)
+            except Exception as ex:
+                print(f"Improved Face Processing: self-heal download failed ({ex}); "
+                      f"initialisation may fail.", flush=True)
+
             # GPU-OOM fallback is handled inside Pipeline.__init__
             try:
                 self._pipeline = Pipeline(
