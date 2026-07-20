@@ -3,3 +3,5 @@ custom-models/
 __pycache__/
 *.pyc
 datastore/
+*.pt
+*.onnx
