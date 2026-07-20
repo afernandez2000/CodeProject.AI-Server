@@ -1,0 +1,9 @@
+{
+  "Modules": {
+    "ObjectDetection": {
+      "LaunchSettings": {
+        "Runtime": "python3.11"
+      }
+    }
+  }
+}
