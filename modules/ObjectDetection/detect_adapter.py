@@ -176,6 +176,26 @@ try:
             self._num_items_found = 0
             self._histogram: dict = {}
 
+            # Surface the resolved default model / engine / tier / device so it is
+            # visible in the server log and the dashboard module status.
+            self._active_model  = self.opts.default_model
+            self._active_engine = self.opts.default_engine
+            self._active_tier   = self.opts.tier
+            self._active_device = "GPU" if self.opts.use_CUDA else "CPU"
+            # print() reaches the server log verbatim (module stdout is captured),
+            # so the active model/engine/tier/device is always visible there.
+            print(f"Object Detection ACTIVE: model='{self._active_model}' "
+                  f"engine={self._active_engine} tier={self._active_tier} "
+                  f"device={self._active_device}", flush=True)
+            self.log(LogMethod.Info | LogMethod.Server, {
+                "filename": __file__,
+                "method":   "initialise",
+                "loglevel": "information",
+                "message":  f"Object Detection active: model '{self._active_model}' "
+                            f"(engine={self._active_engine}, tier={self._active_tier}, "
+                            f"device={self._active_device})",
+            })
+
         def process(self, data: RequestData) -> JSON:
             response = None
 
@@ -205,6 +225,10 @@ try:
             status_data = super().status()
             status_data["numItemsFound"] = self._num_items_found
             status_data["histogram"] = self._histogram
+            status_data["activeModel"]  = getattr(self, "_active_model", None)
+            status_data["activeEngine"] = getattr(self, "_active_engine", None)
+            status_data["tier"]         = getattr(self, "_active_tier", None)
+            status_data["device"]       = getattr(self, "_active_device", None)
             return status_data
 
         def update_statistics(self, response):

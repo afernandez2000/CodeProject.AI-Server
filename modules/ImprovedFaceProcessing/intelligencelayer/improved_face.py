@@ -452,6 +452,27 @@ if _SDK_AVAILABLE:
                 self.inference_device  = "GPU" if opts.use_cuda else "CPU"
                 self.inference_library = "CUDA" if opts.use_cuda else ""
 
+                # Surface the resolved tier / models / device so it is visible in
+                # the server log and the dashboard module status.
+                self._active_tier       = opts.tier
+                self._active_detector   = os.path.basename(opts.detector_path)
+                self._active_recognizer = "ir_101" if opts.tier == "accurate" else "ir_50"
+                self._active_device     = "GPU" if opts.use_cuda else "CPU"
+                # print() reaches the server log verbatim (module stdout is captured).
+                print(f"Improved Face Processing ACTIVE: tier={self._active_tier} "
+                      f"detector={self._active_detector} "
+                      f"recognizer=AdaFace-{self._active_recognizer} "
+                      f"device={self._active_device}", flush=True)
+                self.log(LogMethod.Info | LogMethod.Server, {
+                    "filename": __file__,
+                    "method":   "initialise",
+                    "loglevel": "information",
+                    "message":  f"Improved Face Processing active: tier={self._active_tier}, "
+                                f"detector={self._active_detector}, "
+                                f"recognizer=AdaFace-{self._active_recognizer}, "
+                                f"device={self._active_device}",
+                })
+
             # Load existing gallery into memory
             if isinstance(self._pipeline.gallery, Gallery):
                 self._pipeline.gallery.load()
@@ -520,6 +541,10 @@ if _SDK_AVAILABLE:
         def status(self) -> JSON:
             data = super().status()
             data["numItemsFound"] = self._num_items_found
+            data["tier"]            = getattr(self, "_active_tier", None)
+            data["activeDetector"]  = getattr(self, "_active_detector", None)
+            data["activeRecognizer"] = getattr(self, "_active_recognizer", None)
+            data["device"]          = getattr(self, "_active_device", None)
             return data
 
         def update_statistics(self, response):
