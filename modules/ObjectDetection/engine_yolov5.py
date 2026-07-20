@@ -1,4 +1,12 @@
-import functools, numpy as np, torch
+import functools, warnings, numpy as np, torch
+
+# yolov5==6.2.3 calls torch APIs (e.g. torch.cuda.amp.autocast) that torch 2.13
+# has deprecated. The warnings are harmless but fire on every inference and spam
+# the server log. Suppress this deprecation/future noise from the pinned package.
+warnings.filterwarnings("ignore", category=FutureWarning,      module=r"yolov5\..*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"yolov5\..*")
+warnings.filterwarnings("ignore", message=r".*torch\.cuda\.amp\.autocast.*")
+
 _orig = torch.load
 torch.load = functools.partial(_orig, weights_only=False)   # legacy trusted weights (torch 2.13)
 from yolov5.models.common import DetectMultiBackend, AutoShape
