@@ -1,7 +1,12 @@
 import os
 from codeproject_ai_sdk import ModuleOptions
 
-VRAM_CUTOFF_BYTES = 8 * 10**9  # >= 8GB -> accurate
+# Threshold for the "accurate" tier (yolo26x, the extra-large model). Expressed
+# in BINARY GiB: an "8 GiB" card reports ~8*1024**3 = 8.59e9 bytes, so a decimal
+# 8e9 cutoff wrongly promoted 8 GiB cards (e.g. RTX 3070) to yolo26x, which is
+# too heavy for them. Require ~12 GiB (11.5 with headroom) so 8-11 GiB cards get
+# the lighter "balanced" tier (yolo26m) and only 12 GiB+ cards run yolo26x.
+VRAM_CUTOFF_BYTES = int(11.5 * 1024**3)  # >= ~12 GiB -> accurate
 
 # Generic YOLO26 family weight per tier (weight id may be adjusted per SPIKE.md).
 GENERIC = {"accurate": "yolo26x.pt", "balanced": "yolo26m.pt", "fast": "yolo26n.pt"}
