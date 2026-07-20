@@ -35,3 +35,13 @@ def test_class_filter():
     D = _mod().Detector(o)
     out = D.detect(cv2.imread("src/demos/TestData/Objects/traffic.jpg"), 0.3)
     assert all(p["label"].lower() == "car" for p in out["predictions"])
+
+
+def test_list_models_shape():
+    D = _mod().Detector(_Opts())
+    out = D.list_models()
+    assert set(out.keys()) == {"success", "models"}, (
+        f"list_models() returned unexpected keys: {set(out.keys())}"
+    )
+    assert out["success"] is True
+    assert isinstance(out["models"], list)

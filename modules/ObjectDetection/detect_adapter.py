@@ -4,7 +4,7 @@ detect_adapter.py — ObjectDetection module adapter (Blue Iris parity).
 Response shape matches modules/ObjectDetectionYOLOv5-6.2 byte-for-byte:
   detect/custom: {success, count, predictions:[{confidence,label,x_min,y_min,x_max,y_max}],
                   inferenceMs, processMs, message}
-  list-custom:   {success, models:[...], message}
+  list-custom:   {success, models:[...]}
 """
 
 import os
@@ -32,6 +32,8 @@ class Detector:
         self.opts = opts
         self.router = ModelRouter(opts.use_CUDA)
         self._default_engine = self._build_default_engine(opts.use_CUDA)
+        self._model_names: list = []
+        self._models_last_checked = None
 
     # ------------------------------------------------------------------
     # Engine construction with GPU-OOM → CPU fallback (mirrors FaceProcessing)
@@ -108,19 +110,24 @@ class Detector:
         return self._format(preds, t0, infer_ms)
 
     def list_models(self):
-        """Scan custom_models_dir for *.pt files (excluding yolov5* weights)."""
-        models_dir = self.opts.custom_models_dir
-        try:
-            names = [
-                entry.name[:-3]
-                for entry in os.scandir(models_dir)
-                if entry.is_file()
-                and entry.name.endswith(".pt")
-                and not entry.name.startswith("yolov5")
-            ]
-        except FileNotFoundError:
-            names = []
-        return {"success": True, "models": names, "message": f"{len(names)} model(s) available"}
+        """Scan custom_models_dir for *.pt files (excluding yolov5* weights).
+
+        Result is cached for at least 60 seconds to avoid repeated directory scans.
+        """
+        if self._models_last_checked is None or (time.time() - self._models_last_checked) >= 60:
+            models_dir = self.opts.custom_models_dir
+            try:
+                self._model_names = [
+                    entry.name[:-3]
+                    for entry in os.scandir(models_dir)
+                    if entry.is_file()
+                    and entry.name.endswith(".pt")
+                    and not entry.name.startswith("yolov5")
+                ]
+            except FileNotFoundError:
+                self._model_names = []
+            self._models_last_checked = time.time()
+        return {"success": True, "models": self._model_names}
 
 
 # ---------------------------------------------------------------------------
@@ -135,6 +142,11 @@ try:
     _SDK_AVAILABLE = True
 
     class ObjectDetection_adapter(ModuleRunner):
+
+        def __init__(self):
+            super().__init__()
+            self._num_items_found = 0
+            self._histogram: dict = {}
 
         def initialise(self):
             self.opts = Options()
