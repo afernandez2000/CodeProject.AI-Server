@@ -161,6 +161,12 @@ try:
 
             self._detector = Detector(self.opts)
 
+            # Report GPU status to the server dashboard (mirrors ObjectDetectionYOLOv5-6.2)
+            self.can_use_GPU = self.system_info.hasTorchCuda or self.system_info.hasTorchMPS
+            if self.opts.use_CUDA:
+                self.inference_device  = "GPU"
+                self.inference_library = "CUDA"
+
             self._num_items_found = 0
             self._histogram: dict = {}
 

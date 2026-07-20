@@ -17,7 +17,7 @@
       },
 
       "LaunchSettings": {
-        "AutoStart": true,
+        "AutoStart": false,
         "FilePath": "detect_adapter.py",
         "Runtime": "python3.11",
         "RuntimeLocation": "Shared",
