@@ -329,6 +329,8 @@ wget-log*
 /modules/ObjectDetectionYOLOv5Net/LocalNugets
 /modules/ObjectDetectionYOLOv5-6.2/assets
 /modules/ObjectDetectionYOLOv5-6.2/custom-models
+/modules/ObjectDetection/assets
+/modules/ObjectDetection/custom-models
 
 /src/demos/modules/DotNetLongProcess/assets/
 /src/demos/modules/DotNetSimple/assets/

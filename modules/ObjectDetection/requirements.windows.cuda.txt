@@ -1,0 +1,11 @@
+#! Python3.11
+numpy
+opencv-python
+Pillow
+--extra-index-url https://download.pytorch.org/whl/cu130
+torch==2.13.0+cu130
+--extra-index-url https://download.pytorch.org/whl/cu130
+torchvision==0.28.0+cu130
+ultralytics
+yolov5==6.2.3
+CodeProject-AI-SDK
